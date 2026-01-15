@@ -108,6 +108,11 @@ function draw(){
     ctx.fillText(d.right, d.x+100, d.y+20);
     ctx.fillStyle = "#334155";
   });
+  // Chữ trong map
+ctx.fillStyle = "yellow";
+ctx.font = "20px Arial";
+ctx.fillText("hé lô mọi người, chơi vui k =))", 420, 150);
+
 
   ctx.fillStyle = "#2563eb";
   ctx.fillRect(player.x, player.y, player.size, player.size);
@@ -124,8 +129,4 @@ function loop(){
 
 </body>
 </html>
-  // Chữ bên phải
-  ctx.fillStyle = "white";
-  ctx.font = "18px Arial";
-  ctx.fillText("hé lô mọi người, chơi vui k =))", 450, 40);
-
+ 
