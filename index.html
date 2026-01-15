@@ -1,10 +1,107 @@
-<button onclick="score++">Bấm +1</button>
-<p id="s">0</p>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Tham quan trường Võ Thành Trang</title>
+<style>
+  body {
+    margin: 0;
+    background: #0f172a;
+    color: white;
+    text-align: center;
+    font-family: Arial;
+  }
+  canvas {
+    background: #22c55e;
+    margin-top: 10px;
+    border: 4px solid white;
+  }
+</style>
+</head>
+<body>
+
+<h2>🏫 Tham quan Trường Võ Thành Trang</h2>
+<p>Nhân vật: <b>Bảo Anh</b> – Tìm lớp <b>7A2</b></p>
+<p>Di chuyển: W A S D hoặc ↑ ↓ ← →</p>
+
+<canvas id="game" width="800" height="500"></canvas>
+
 <script>
-let score = 0;
-document.querySelector("button").onclick = () => {
-  score++;
-  document.getElementById("s").innerText = score;
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+// Nhân vật
+let player = {
+  x: 100,
+  y: 250,
+  size: 20,
+  speed: 3
 };
+
+// Lớp học
+let classroom = {
+  x: 600,
+  y: 180,
+  w: 120,
+  h: 80
+};
+
+let keys = {};
+
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+function update() {
+  if (keys["w"] || keys["ArrowUp"]) player.y -= player.speed;
+  if (keys["s"] || keys["ArrowDown"]) player.y += player.speed;
+  if (keys["a"] || keys["ArrowLeft"]) player.x -= player.speed;
+  if (keys["d"] || keys["ArrowRight"]) player.x += player.speed;
+
+  // Giới hạn sân
+  player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
+  player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Sân trường
+  ctx.fillStyle = "#16a34a";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Tòa nhà lớp 7A2
+  ctx.fillStyle = "#64748b";
+  ctx.fillRect(classroom.x, classroom.y, classroom.w, classroom.h);
+  ctx.fillStyle = "white";
+  ctx.fillText("Lớp 7A2", classroom.x + 25, classroom.y + 45);
+
+  // Nhân vật
+  ctx.fillStyle = "#2563eb";
+  ctx.fillRect(player.x, player.y, player.size, player.size);
+  ctx.fillStyle = "white";
+  ctx.fillText("Bảo Anh", player.x - 10, player.y - 5);
+
+  // Check thắng
+  if (
+    player.x > classroom.x &&
+    player.x < classroom.x + classroom.w &&
+    player.y > classroom.y &&
+    player.y < classroom.y + classroom.h
+  ) {
+    ctx.fillStyle = "yellow";
+    ctx.font = "30px Arial";
+    ctx.fillText("🎉 Bạn đã tìm thấy lớp 7A2!", 180, 60);
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
 </script>
 
+</body>
+</html>
