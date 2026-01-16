@@ -1,132 +1,75 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-<meta charset="utf-8">
-<title>Tổ 3 – Lớp 7A2</title>
-<style>
-body {
-  margin: 0;
-  background: #020617;
-  color: white;
-  font-family: Arial;
-  text-align: center;
-}
-canvas {
-  background: #1e293b;
-  margin-top: 10px;
-  border: 4px solid white;
-}
-#menu {
-  margin-top: 50px;
-}
-button {
-  margin: 5px;
-  padding: 10px 15px;
-  font-size: 16px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-}
-</style>
+  <meta charset="UTF-8">
+  <title>Game Luyện Chuột</title>
+  <style>
+    body {
+      text-align: center;
+      background: #111;
+      color: white;
+      font-family: Arial;
+    }
+    canvas {
+      background: #222;
+      margin-top: 10px;
+      cursor: crosshair;
+    }
+  </style>
 </head>
 <body>
 
-<div id="menu">
-  <h2>🎮 Chọn nhân vật (Tổ 3)</h2>
-</div>
+<h2>🎈 Game Luyện Chuột 🎈</h2>
+<p>Điểm: <span id="score">0</span></p>
 
-<canvas id="game" width="800" height="500" style="display:none"></canvas>
+<canvas id="game" width="600" height="400"></canvas>
 
 <script>
-const names = [
-  "Huy","Quỳnh Tiên",
-  "Giang","Phú Khang",
-  "Tr.Phương Anh","Duy",
-  "Thịnh","Bảo Anh",
-  "Vinh","Cường",
-  "Trâm"
-];
-
-const menu = document.getElementById("menu");
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+const scoreEl = document.getElementById("score");
 
-names.forEach(n => {
-  const btn = document.createElement("button");
-  btn.innerText = n;
-  btn.onclick = () => startGame(n);
-  menu.appendChild(btn);
+let score = 0;
+let bubble = {};
+
+function randomBubble() {
+  bubble = {
+    x: Math.random() * 500 + 50,
+    y: Math.random() * 300 + 50,
+    r: 25
+  };
+}
+
+function drawBubble() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.beginPath();
+  ctx.arc(bubble.x, bubble.y, bubble.r, 0, Math.PI * 2);
+  ctx.fillStyle = "deepskyblue";
+  ctx.fill();
+}
+
+canvas.addEventListener("click", function(e) {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  const dx = mx - bubble.x;
+  const dy = my - bubble.y;
+  const distance = Math.sqrt(dx*dx + dy*dy);
+
+  if (distance < bubble.r) {
+    score++;
+    scoreEl.textContent = score;
+    randomBubble();
+    drawBubble();
+  }
 });
 
-let player = {
-  x: 50,
-  y: 250,
-  size: 18,
-  speed: 3,
-  name: ""
-};
-
-const desks = [
-  {x:200,y:80,left:"Huy",right:"Quỳnh Tiên"},
-  {x:200,y:140,left:"Giang",right:"Phú Khang"},
-  {x:200,y:200,left:"Tr.Phương Anh",right:"Duy"},
-  {x:200,y:260,left:"Thịnh",right:"Bảo Anh"},
-  {x:200,y:320,left:"Vinh",right:"Cường"},
-  {x:200,y:380,left:"",right:"Trâm"},
-];
-
-let keys = {};
-
-document.addEventListener("keydown", e => keys[e.key] = true);
-document.addEventListener("keyup", e => keys[e.key] = false);
-
-function startGame(name){
-  player.name = name;
-  menu.style.display = "none";
-  canvas.style.display = "block";
-  loop();
-}
-
-function update(){
-  if(keys["w"]||keys["ArrowUp"]) player.y -= player.speed;
-  if(keys["s"]||keys["ArrowDown"]) player.y += player.speed;
-  if(keys["a"]||keys["ArrowLeft"]) player.x -= player.speed;
-  if(keys["d"]||keys["ArrowRight"]) player.x += player.speed;
-
-  player.x = Math.max(0, Math.min(canvas.width-player.size, player.x));
-  player.y = Math.max(0, Math.min(canvas.height-player.size, player.y));
-}
-
-function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  ctx.fillStyle = "#334155";
-  desks.forEach(d=>{
-    ctx.fillRect(d.x, d.y, 180, 30);
-    ctx.fillStyle = "white";
-    ctx.fillText(d.left, d.x+10, d.y+20);
-    ctx.fillText(d.right, d.x+100, d.y+20);
-    ctx.fillStyle = "#334155";
-  });
-  // Chữ trong map
-ctx.fillStyle = "yellow";
-ctx.font = "20px Arial";
-ctx.fillText("hé lô mọi người, chơi vui k =))", 420, 150);
-
-
-  ctx.fillStyle = "#2563eb";
-  ctx.fillRect(player.x, player.y, player.size, player.size);
-  ctx.fillStyle = "yellow";
-  ctx.fillText(player.name, player.x-5, player.y-5);
-}
-
-function loop(){
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
+// Khởi động game
+randomBubble();
+drawBubble();
 </script>
 
 </body>
 </html>
- 
+
