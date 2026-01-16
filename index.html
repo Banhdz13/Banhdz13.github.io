@@ -1,75 +1,113 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>Game Luyện Chuột</title>
-  <style>
-    body {
-      text-align: center;
-      background: #111;
-      color: white;
-      font-family: Arial;
-    }
-    canvas {
-      background: #222;
-      margin-top: 10px;
-      cursor: crosshair;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Game Luyện Chuột Nâng Cao</title>
+<style>
+  body {
+    background: #111;
+    color: white;
+    text-align: center;
+    font-family: Arial;
+  }
+  canvas {
+    background: #222;
+    cursor: crosshair;
+  }
+</style>
 </head>
 <body>
 
-<h2>🎈 Game Luyện Chuột 🎈</h2>
-<p>Điểm: <span id="score">0</span></p>
+<h2>🎯 Game Luyện Chuột – Bong Bóng</h2>
+<p>⏱ Thời gian: <span id="time">30</span>s | ⭐ Điểm: <span id="score">0</span></p>
 
-<canvas id="game" width="600" height="400"></canvas>
+<canvas id="game" width="700" height="400"></canvas>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
+const timeEl = document.getElementById("time");
 
+let bubbles = [];
 let score = 0;
-let bubble = {};
+let time = 30;
+let gameOver = false;
 
-function randomBubble() {
-  bubble = {
-    x: Math.random() * 500 + 50,
-    y: Math.random() * 300 + 50,
-    r: 25
+function createBubble() {
+  return {
+    x: Math.random() * 650 + 25,
+    y: 450,
+    r: 20,
+    speed: Math.random() * 2 + 2,
+    life: 0
   };
 }
 
-function drawBubble() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.beginPath();
-  ctx.arc(bubble.x, bubble.y, bubble.r, 0, Math.PI * 2);
-  ctx.fillStyle = "deepskyblue";
-  ctx.fill();
+function spawnBubbles() {
+  let amount = Math.min(5, 1 + Math.floor(score / 5));
+  for (let i = 0; i < amount; i++) {
+    bubbles.push(createBubble());
+  }
 }
 
-canvas.addEventListener("click", function(e) {
+function update() {
+  if (gameOver) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  bubbles.forEach((b, i) => {
+    b.y -= b.speed;
+    b.life++;
+
+    // vẽ bong bóng
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fillStyle = "deepskyblue";
+    ctx.fill();
+
+    // quá thời gian thì biến mất
+    if (b.life > 90) {
+      bubbles.splice(i, 1);
+    }
+  });
+
+  requestAnimationFrame(update);
+}
+
+canvas.addEventListener("click", e => {
   const rect = canvas.getBoundingClientRect();
   const mx = e.clientX - rect.left;
   const my = e.clientY - rect.top;
 
-  const dx = mx - bubble.x;
-  const dy = my - bubble.y;
-  const distance = Math.sqrt(dx*dx + dy*dy);
-
-  if (distance < bubble.r) {
-    score++;
-    scoreEl.textContent = score;
-    randomBubble();
-    drawBubble();
-  }
+  bubbles.forEach((b, i) => {
+    const dx = mx - b.x;
+    const dy = my - b.y;
+    if (Math.sqrt(dx*dx + dy*dy) < b.r) {
+      score++;
+      scoreEl.textContent = score;
+      bubbles.splice(i, 1);
+    }
+  });
 });
 
-// Khởi động game
-randomBubble();
-drawBubble();
+// tạo bong bóng liên tục
+let spawn = setInterval(spawnBubbles, 800);
+
+// đếm thời gian
+let timer = setInterval(() => {
+  time--;
+  timeEl.textContent = time;
+  if (time <= 0) {
+    gameOver = true;
+    clearInterval(timer);
+    clearInterval(spawn);
+    alert("Hết giờ! Điểm của bạn: " + score);
+  }
+}, 1000);
+
+update();
 </script>
 
 </body>
 </html>
-
