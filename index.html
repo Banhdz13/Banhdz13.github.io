@@ -3,28 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <title>Game Luyện Chuột</title>
+
 <style>
-body {
+body{
   background:#111;
   color:white;
   text-align:center;
   font-family:Arial;
 }
-canvas {
+canvas{
   background:#222;
   cursor:none;
-   display: block;
-  margin: 0 auto;
+  display:block;
+  margin:0 auto;
 }
-button {
+button{
   padding:10px 20px;
   margin:5px;
   font-size:16px;
   cursor:pointer;
 }
-#menu { margin-top:40px; }
+#menu{
+  margin-top:40px;
+}
 </style>
 </head>
+
 <body>
 
 <h2>🎯 Game Luyện Chuột</h2>
@@ -37,7 +41,7 @@ button {
 </div>
 
 <p id="info" style="display:none;">
-⏱ <span id="time"></span>s | ⭐ <span id="score">0</span>
+⏱ <span id="time">0</span>s | ⭐ <span id="score">0</span>
 </p>
 
 <canvas id="game" width="700" height="400" style="display:none;"></canvas>
@@ -54,15 +58,22 @@ let bubbles = [];
 let score = 0;
 let time = 0;
 let gameOver = false;
-let spawnInterval;
-let timer;
+let spawnTimer;
+let timeTimer;
 
+// chuột + vệt chuột
 let mouse = {x:0,y:0};
+let mouseTrail = [];
 
 canvas.addEventListener("mousemove", e=>{
   const r = canvas.getBoundingClientRect();
   mouse.x = e.clientX - r.left;
   mouse.y = e.clientY - r.top;
+
+  mouseTrail.push({x:mouse.x,y:mouse.y});
+  if(mouseTrail.length > 12){
+    mouseTrail.shift();
+  }
 });
 
 function createBubble(){
@@ -84,48 +95,54 @@ function spawnBubbles(){
 
 function update(){
   if(gameOver) return;
+
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
+  // bong bóng
   bubbles.forEach((b,i)=>{
     b.life++;
 
     // fade chậm
-    if(b.life<30) b.alpha+=0.03;
-    if(b.life>90) b.alpha-=0.03;
+    if(b.life < 40) b.alpha += 0.02;
+    if(b.life > 120) b.alpha -= 0.02;
 
-    if(b.alpha<=0){
+    if(b.alpha <= 0){
       bubbles.splice(i,1);
       return;
     }
 
-    ctx.globalAlpha=b.alpha;
+    ctx.globalAlpha = b.alpha;
     ctx.beginPath();
     ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
     ctx.fillStyle="deepskyblue";
     ctx.fill();
-    ctx.globalAlpha=1;
+    ctx.globalAlpha = 1;
   });
 
-  // chuột
-  ctx.beginPath();
-  ctx.arc(mouse.x,mouse.y,6,0,Math.PI*2);
-  ctx.fillStyle="yellow";
-  ctx.fill();
+  // vệt chuột
+  mouseTrail.forEach((p,i)=>{
+    ctx.globalAlpha = i / mouseTrail.length;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,4,0,Math.PI*2);
+    ctx.fillStyle="yellow";
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
 
   requestAnimationFrame(update);
 }
 
-canvas.addEventListener("click",e=>{
-  const r=canvas.getBoundingClientRect();
-  const mx=e.clientX-r.left;
-  const my=e.clientY-r.top;
+canvas.addEventListener("click", e=>{
+  const r = canvas.getBoundingClientRect();
+  const mx = e.clientX - r.left;
+  const my = e.clientY - r.top;
 
   bubbles.forEach((b,i)=>{
-    const dx=mx-b.x;
-    const dy=my-b.y;
-    if(Math.sqrt(dx*dx+dy*dy)<b.r){
+    const dx = mx - b.x;
+    const dy = my - b.y;
+    if(Math.sqrt(dx*dx+dy*dy) < b.r){
       score++;
-      scoreEl.textContent=score;
+      scoreEl.textContent = score;
       bubbles.splice(i,1);
     }
   });
@@ -136,19 +153,21 @@ function startGame(t){
   canvas.style.display="block";
   info.style.display="block";
 
-  score=0;
-  time=t;
-  bubbles=[];
-  gameOver=false;
-  scoreEl.textContent=0;
-  timeEl.textContent=time;
+  score = 0;
+  time = t;
+  bubbles = [];
+  mouseTrail = [];
+  gameOver = false;
 
-  spawnInterval=setInterval(spawnBubbles,700);
+  scoreEl.textContent = 0;
+  timeEl.textContent = time;
 
-  timer=setInterval(()=>{
+  spawnTimer = setInterval(spawnBubbles,700);
+
+  timeTimer = setInterval(()=>{
     time--;
-    timeEl.textContent=time;
-    if(time<=0){
+    timeEl.textContent = time;
+    if(time <= 0){
       endGame();
     }
   },1000);
@@ -157,15 +176,15 @@ function startGame(t){
 }
 
 function endGame(){
-  gameOver=true;
-  clearInterval(timer);
-  clearInterval(spawnInterval);
+  gameOver = true;
+  clearInterval(spawnTimer);
+  clearInterval(timeTimer);
 
   let rank="";
   if(score>=25) rank="🔥 CỰC KÌ CỰC KÌ PROMAXXX";
   else if(score>=20) rank="💎 CỰC PRO";
   else if(score>=15) rank="😎 QUÁ PRO";
-  else rank="🙂 Tập thêm nha";
+  else rank="🙂 Cố thêm chút nữa";
 
   alert("Hết giờ!\nĐiểm: "+score+"\nXếp hạng: "+rank);
 }
