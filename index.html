@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Game Luyện Chuột Nâng Cao</title>
+<title>Game Luyện Chuột PRO</title>
 <style>
   body {
     background: #111;
@@ -12,14 +12,14 @@
   }
   canvas {
     background: #222;
-    cursor: crosshair;
+    cursor: none; /* ẩn chuột mặc định */
   }
 </style>
 </head>
 <body>
 
-<h2>🎯 Game Luyện Chuột – Bong Bóng</h2>
-<p>⏱ Thời gian: <span id="time">30</span>s | ⭐ Điểm: <span id="score">0</span></p>
+<h2>🎯 Game Luyện Chuột</h2>
+<p>⏱ <span id="time">30</span>s | ⭐ <span id="score">0</span></p>
 
 <canvas id="game" width="700" height="400"></canvas>
 
@@ -34,18 +34,27 @@ let score = 0;
 let time = 30;
 let gameOver = false;
 
+// chuột custom
+let mouse = { x: 0, y: 0 };
+
+canvas.addEventListener("mousemove", e => {
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = e.clientX - rect.left;
+  mouse.y = e.clientY - rect.top;
+});
+
 function createBubble() {
   return {
     x: Math.random() * 650 + 25,
-    y: 450,
+    y: Math.random() * 350 + 25,
     r: 20,
-    speed: Math.random() * 2 + 2,
-    life: 0
+    alpha: 0,      // độ mờ
+    life: 0        // tuổi đời
   };
 }
 
 function spawnBubbles() {
-  let amount = Math.min(5, 1 + Math.floor(score / 5));
+  let amount = Math.min(6, 2 + Math.floor(score / 5));
   for (let i = 0; i < amount; i++) {
     bubbles.push(createBubble());
   }
@@ -53,24 +62,35 @@ function spawnBubbles() {
 
 function update() {
   if (gameOver) return;
-
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   bubbles.forEach((b, i) => {
-    b.y -= b.speed;
     b.life++;
 
-    // vẽ bong bóng
+    // fade in
+    if (b.life < 20) b.alpha += 0.05;
+
+    // fade out
+    if (b.life > 60) b.alpha -= 0.05;
+
+    if (b.alpha <= 0) {
+      bubbles.splice(i, 1);
+      return;
+    }
+
+    ctx.globalAlpha = b.alpha;
     ctx.beginPath();
     ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
     ctx.fillStyle = "deepskyblue";
     ctx.fill();
-
-    // quá thời gian thì biến mất
-    if (b.life > 90) {
-      bubbles.splice(i, 1);
-    }
+    ctx.globalAlpha = 1;
   });
+
+  // vẽ chuột custom
+  ctx.beginPath();
+  ctx.arc(mouse.x, mouse.y, 6, 0, Math.PI * 2);
+  ctx.fillStyle = "yellow";
+  ctx.fill();
 
   requestAnimationFrame(update);
 }
@@ -91,10 +111,10 @@ canvas.addEventListener("click", e => {
   });
 });
 
-// tạo bong bóng liên tục
-let spawn = setInterval(spawnBubbles, 800);
+// tạo bong bóng nhanh dần
+let spawn = setInterval(spawnBubbles, 700);
 
-// đếm thời gian
+// thời gian
 let timer = setInterval(() => {
   time--;
   timeEl.textContent = time;
@@ -102,7 +122,7 @@ let timer = setInterval(() => {
     gameOver = true;
     clearInterval(timer);
     clearInterval(spawn);
-    alert("Hết giờ! Điểm của bạn: " + score);
+    alert("Hết giờ! Điểm: " + score);
   }
 }, 1000);
 
