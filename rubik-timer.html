@@ -2,8 +2,12 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Rubik Timer</title>
+<title>BAcubeTimer</title>
 <style>
+:root{
+  --bg:#111;
+  --time:#00ff00;
+}
 body{
   margin:0;
   height:100vh;
@@ -11,51 +15,71 @@ body{
   flex-direction:column;
   justify-content:center;
   align-items:center;
-  background:#111;
-  color:#0f0;
+  background:var(--bg);
+  color:var(--time);
   font-family:Arial, sans-serif;
+}
+h1{
+  color:white;
+  margin-bottom:20px;
 }
 #time{
   font-size:80px;
-  margin-bottom:20px;
 }
 #hint{
   color:#aaa;
-}
-button{
-  margin-top:15px;
-  padding:8px 20px;
-  font-size:16px;
-  cursor:pointer;
-}
-#last{
   margin-top:10px;
-  color:#fff;
+}
+.settings{
+  position:fixed;
+  bottom:10px;
+  color:white;
+}
+input{
+  margin-left:5px;
 }
 </style>
 </head>
 <body>
 
+<h1>BAcubeTimer</h1>
 <div id="time">0.000</div>
-<div id="hint">Nhấn SPACE để bắt đầu / dừng</div>
-<button onclick="reset()">Reset</button>
-<div id="last"></div>
+<div id="hint">Giữ SPACE → thả để bắt đầu</div>
+
+<div class="settings">
+  Nền <input type="color" id="bg" value="#111111">
+  Số <input type="color" id="timeColor" value="#00ff00">
+</div>
 
 <script>
 let startTime = 0;
 let running = false;
-let timerInterval;
+let ready = false;
+let interval;
+
+const timeEl = document.getElementById("time");
+const hint = document.getElementById("hint");
 
 function format(ms){
   return (ms/1000).toFixed(3);
 }
 
 document.addEventListener("keydown", e=>{
+  if(e.code === "Space" && !running){
+    e.preventDefault();
+    ready = true;
+    timeEl.style.color = "red";
+    hint.innerText = "Thả SPACE để bắt đầu";
+  }
+});
+
+document.addEventListener("keyup", e=>{
   if(e.code === "Space"){
     e.preventDefault();
-    if(!running){
+    if(!running && ready){
       start();
-    }else{
+      ready = false;
+    }else if(running){
       stop();
     }
   }
@@ -64,26 +88,27 @@ document.addEventListener("keydown", e=>{
 function start(){
   running = true;
   startTime = Date.now();
-  timerInterval = setInterval(()=>{
-    document.getElementById("time").innerText =
-      format(Date.now() - startTime);
-  }, 10);
+  timeEl.style.color = getComputedStyle(document.documentElement)
+    .getPropertyValue('--time');
+  hint.innerText = "Nhấn SPACE để dừng";
+  interval = setInterval(()=>{
+    timeEl.innerText = format(Date.now() - startTime);
+  },10);
 }
 
 function stop(){
   running = false;
-  clearInterval(timerInterval);
-  const finalTime = document.getElementById("time").innerText;
-  document.getElementById("last").innerText =
-    "Lần giải vừa rồi: " + finalTime + " giây";
+  clearInterval(interval);
+  hint.innerText = "Giữ SPACE để giải tiếp";
 }
 
-function reset(){
-  running = false;
-  clearInterval(timerInterval);
-  document.getElementById("time").innerText = "0.000";
-  document.getElementById("last").innerText = "";
-}
+document.getElementById("bg").oninput = e=>{
+  document.documentElement.style.setProperty("--bg", e.target.value);
+};
+document.getElementById("timeColor").oninput = e=>{
+  document.documentElement.style.setProperty("--time", e.target.value);
+  timeEl.style.color = e.target.value;
+};
 </script>
 
 </body>
