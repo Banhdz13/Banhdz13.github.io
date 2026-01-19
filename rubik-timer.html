@@ -4,111 +4,205 @@
 <meta charset="UTF-8">
 <title>BAcubeTimer</title>
 <style>
-:root{
-  --bg:#111;
-  --time:#00ff00;
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: white;
+    text-align: center;
 }
-body{
-  margin:0;
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  background:var(--bg);
-  color:var(--time);
-  font-family:Arial, sans-serif;
+header {
+    padding: 15px;
+    font-size: 28px;
+    font-weight: bold;
 }
-h1{
-  color:white;
-  margin-bottom:20px;
+#timer {
+    font-size: 90px;
+    margin: 20px 0;
 }
-#time{
-  font-size:80px;
+#message {
+    font-size: 22px;
+    min-height: 30px;
 }
-#hint{
-  color:#aaa;
-  margin-top:10px;
+button {
+    padding: 10px 16px;
+    margin: 5px;
+    font-size: 16px;
+    cursor: pointer;
 }
-.settings{
-  position:fixed;
-  bottom:10px;
-  color:white;
+.panel {
+    margin: 15px auto;
+    max-width: 600px;
+    border: 1px solid #333;
+    padding: 10px;
 }
-input{
-  margin-left:5px;
+input[type="color"] {
+    margin-left: 10px;
+}
+ul {
+    text-align: left;
+}
+.scramble {
+    font-size: 20px;
+    margin: 10px 0;
+}
+.fake-connect {
+    color: #0f0;
+    font-size: 14px;
 }
 </style>
 </head>
+
 <body>
 
-<h1>BAcubeTimer</h1>
-<div id="time">0.000</div>
-<div id="hint">Giữ SPACE → thả để bắt đầu</div>
+<header id="title">BAcubeTimer</header>
 
-<div class="settings">
-  Nền <input type="color" id="bg" value="#111111">
-  Số <input type="color" id="timeColor" value="#00ff00">
+<div class="scramble" id="scramble">Scramble: </div>
+
+<div id="timer">0.00</div>
+<div id="message">Giữ SPACE để chuẩn bị</div>
+
+<button onclick="resetTimer()">Reset</button>
+
+<div class="panel">
+    <h3>🎨 Cài đặt</h3>
+    Nền: <input type="color" onchange="setBg(this.value)">
+    Chữ: <input type="color" onchange="setText(this.value)">
 </div>
+
+<div class="panel">
+    <h3>📊 Thống kê</h3>
+    <div>Best: <span id="best">--</span></div>
+    <ul id="history"></ul>
+    <button onclick="clearAll()">🗑 Xóa hết</button>
+</div>
+
+<div class="panel">
+    <h3>⌚ Đồng hồ ngoài</h3>
+    <div class="fake-connect">Bluetooth / Cable: ❌ (mô phỏng)</div>
+    <button onclick="alert('Web chỉ mô phỏng, chưa kết nối được đồng hồ thật')">Connect</button>
+</div>
+
+<audio id="win" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3"></audio>
+<audio id="lose" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"></audio>
 
 <script>
 let startTime = 0;
 let running = false;
-let ready = false;
-let interval;
+let hold = false;
+let times = [];
 
-const timeEl = document.getElementById("time");
-const hint = document.getElementById("hint");
-
-function format(ms){
-  return (ms/1000).toFixed(3);
-}
-
-document.addEventListener("keydown", e=>{
-  if(e.code === "Space" && !running){
-    e.preventDefault();
-    ready = true;
-    timeEl.style.color = "red";
-    hint.innerText = "Thả SPACE để bắt đầu";
-  }
-});
-
-document.addEventListener("keyup", e=>{
-  if(e.code === "Space"){
-    e.preventDefault();
-    if(!running && ready){
-      start();
-      ready = false;
-    }else if(running){
-      stop();
+document.addEventListener("keydown", e => {
+    if (e.code === "Space" && !hold && !running) {
+        hold = true;
+        document.getElementById("message").innerText = "Thả SPACE để bắt đầu";
     }
-  }
 });
 
-function start(){
-  running = true;
-  startTime = Date.now();
-  timeEl.style.color = getComputedStyle(document.documentElement)
-    .getPropertyValue('--time');
-  hint.innerText = "Nhấn SPACE để dừng";
-  interval = setInterval(()=>{
-    timeEl.innerText = format(Date.now() - startTime);
-  },10);
+document.addEventListener("keyup", e => {
+    if (e.code === "Space" && hold && !running) {
+        hold = false;
+        start();
+    } else if (e.code === "Space" && running) {
+        stop();
+    }
+});
+
+function start() {
+    running = true;
+    startTime = Date.now();
+    document.getElementById("message").innerText = "Đang chạy...";
+    loop();
 }
 
-function stop(){
-  running = false;
-  clearInterval(interval);
-  hint.innerText = "Giữ SPACE để giải tiếp";
+function loop() {
+    if (!running) return;
+    let t = (Date.now() - startTime) / 1000;
+    document.getElementById("timer").innerText = t.toFixed(2);
+    requestAnimationFrame(loop);
 }
 
-document.getElementById("bg").oninput = e=>{
-  document.documentElement.style.setProperty("--bg", e.target.value);
-};
-document.getElementById("timeColor").oninput = e=>{
-  document.documentElement.style.setProperty("--time", e.target.value);
-  timeEl.style.color = e.target.value;
-};
+function stop() {
+    running = false;
+    let t = (Date.now() - startTime) / 1000;
+    document.getElementById("timer").innerText = t.toFixed(2);
+    evaluate(t);
+    save(t);
+    newScramble();
+}
+
+function resetTimer() {
+    running = false;
+    document.getElementById("timer").innerText = "0.00";
+    document.getElementById("message").innerText = "Giữ SPACE để chuẩn bị";
+}
+
+function evaluate(t) {
+    let msg = "";
+    let sound = "win";
+
+    if (t <= 5) msg = "KỈ LỤC THẾ GIỚI À =))";
+    else if (t <= 10) msg = "Trời ơi cái gì mà đỉnh dữ vậy";
+    else if (t <= 15) msg = "Ê quá ghê rồi á nha";
+    else if (t <= 20) msg = "Ối dồi ôi ghê vậy";
+    else if (t <= 25) msg = "Ghê vậy ba";
+    else if (t <= 35) msg = "Cũng ghê phết nhờ";
+    else if (t <= 40) msg = "Mới bắt đầu học F2L hả";
+    else {
+        msg = "Ê học F2L đi nha";
+        sound = "lose";
+    }
+
+    document.getElementById("message").innerText = msg;
+    document.getElementById(sound).play();
+}
+
+function save(t) {
+    times.push(t);
+    updateStats();
+}
+
+function updateStats() {
+    let best = Math.min(...times);
+    document.getElementById("best").innerText = best.toFixed(2);
+
+    let ul = document.getElementById("history");
+    ul.innerHTML = "";
+    times.forEach((t, i) => {
+        let li = document.createElement("li");
+        li.innerHTML = `${t.toFixed(2)}s 
+        <button onclick="deleteOne(${i})">🗑</button>`;
+        ul.appendChild(li);
+    });
+}
+
+function deleteOne(i) {
+    times.splice(i, 1);
+    updateStats();
+}
+
+function clearAll() {
+    times = [];
+    updateStats();
+}
+
+function setBg(c) {
+    document.body.style.background = c;
+}
+function setText(c) {
+    document.body.style.color = c;
+}
+
+function newScramble() {
+    const moves = ["R","R'","L","L'","U","U'","D","D'","F","F'","B","B'"];
+    let s = [];
+    for (let i=0;i<20;i++) {
+        s.push(moves[Math.floor(Math.random()*moves.length)]);
+    }
+    document.getElementById("scramble").innerText = "Scramble: " + s.join(" ");
+}
+
+newScramble();
 </script>
 
 </body>
