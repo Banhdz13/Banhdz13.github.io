@@ -4,47 +4,46 @@
 <meta charset="UTF-8">
 <title>BAcubeTimer</title>
 <style>
-body {
-    margin: 0;
-    background: #111;
-    color: white;
-    font-family: Arial;
-    text-align: center;
+body{
+    margin:0;
+    background:#111;
+    color:white;
+    font-family:Arial;
+    text-align:center;
 }
-header {
-    font-size: 28px;
-    padding: 15px;
-    font-weight: bold;
+header{
+    font-size:28px;
+    padding:15px;
+    font-weight:bold;
 }
-#scramble {
-    font-size: 18px;
-    margin: 10px;
+#scramble{
+    font-size:18px;
+    margin:10px;
 }
-#timer {
-    font-size: 90px;
-    margin: 20px 0;
+#timer{
+    font-size:90px;
+    margin:20px 0;
 }
-#message {
-    min-height: 30px;
-    font-size: 22px;
+#message{
+    min-height:28px;
+    font-size:22px;
 }
-canvas {
-    background: #222;
-    display: block;
-    margin: 10px auto;
+button{
+    padding:8px 14px;
+    margin:4px;
+    font-size:15px;
 }
-button {
-    padding: 8px 14px;
-    margin: 4px;
-    font-size: 15px;
+.panel{
+    max-width:600px;
+    margin:10px auto;
+    border:1px solid #333;
+    padding:10px;
 }
-.panel {
-    max-width: 600px;
-    margin: 10px auto;
-    border: 1px solid #333;
-    padding: 10px;
+ul{text-align:left;}
+canvas{
+    display:block;
+    margin:10px auto;
 }
-ul { text-align: left; }
 </style>
 </head>
 
@@ -64,8 +63,8 @@ ul { text-align: left; }
 
 <div class="panel">
 <h3>🎨 Màu sắc</h3>
-Nền <input type="color" onchange="setBg(this.value)">
-Chữ <input type="color" onchange="setText(this.value)">
+Nền <input type="color" onchange="document.body.style.background=this.value">
+Chữ <input type="color" onchange="document.body.style.color=this.value">
 </div>
 
 <div class="panel">
@@ -74,13 +73,19 @@ Chữ <input type="color" onchange="setText(this.value)">
 <button onclick="clearAll()">🗑 Xóa hết</button>
 </div>
 
-<audio id="win" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3"></audio>
-<audio id="lose" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"></audio>
+<audio id="good" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3"></audio>
+<audio id="bad" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"></audio>
 
 <script>
-let running=false, ready=false, startTime=0, raf;
+let running=false, ready=false;
+let startTime=0, raf;
 let times=[];
 
+const timer=document.getElementById("timer");
+const message=document.getElementById("message");
+const history=document.getElementById("history");
+
+/* ===== TIMER ===== */
 document.addEventListener("keydown",e=>{
  if(e.code==="Space" && !running){
    ready=true;
@@ -88,7 +93,6 @@ document.addEventListener("keydown",e=>{
    e.preventDefault();
  }
 });
-
 document.addEventListener("keyup",e=>{
  if(e.code==="Space"){
    if(!running && ready) start();
@@ -104,13 +108,11 @@ function start(){
  message.innerText="Đang chạy...";
  loop();
 }
-
 function loop(){
  if(!running) return;
  timer.innerText=((performance.now()-startTime)/1000).toFixed(2);
  raf=requestAnimationFrame(loop);
 }
-
 function stop(){
  running=false;
  cancelAnimationFrame(raf);
@@ -120,72 +122,72 @@ function stop(){
  save(t);
  newScramble();
 }
-
 function resetTimer(){
- running=false;
- ready=false;
+ running=false; ready=false;
  timer.innerText="0.00";
  message.innerText="Giữ SPACE để chuẩn bị";
 }
 
+/* ===== ĐÁNH GIÁ ===== */
 function evaluate(t){
- let msg="", sound="win";
+ let msg="", sound="good";
  if(t<=5) msg="KỈ LỤC THẾ GIỚI À =))";
  else if(t<=10) msg="Trời ơi đỉnh dữ vậy";
  else if(t<=15) msg="Ê quá ghê rồi á";
  else if(t<=20) msg="Ối dồi ôi ghê vậy";
  else if(t<=25) msg="Ghê vậy ba";
  else if(t<=35) msg="Cũng ghê phết nhờ";
- else if(t<=40) msg="Mới học F2L hả";
- else { msg="Ê học F2L đi nha"; sound="lose"; }
+ else if(t<=40) msg="Mới bắt đầu học F2L hả";
+ else{ msg="Ê học F2L đi nha"; sound="bad"; }
  message.innerText=msg;
  document.getElementById(sound).play();
 }
 
+/* ===== THỐNG KÊ ===== */
 function save(t){
  times.push(t);
- updateStats();
+ renderStats();
 }
-
-function updateStats(){
+function renderStats(){
  history.innerHTML="";
  times.forEach((t,i)=>{
-   let li=document.createElement("li");
-   li.innerHTML=`${t.toFixed(2)}s 
-   <button onclick="del(${i})">🗑</button>`;
-   history.appendChild(li);
+  let li=document.createElement("li");
+  li.innerHTML=`${t.toFixed(2)}s <button onclick="del(${i})">🗑</button>`;
+  history.appendChild(li);
  });
 }
+function del(i){ times.splice(i,1); renderStats(); }
+function clearAll(){ times=[]; renderStats(); }
 
-function del(i){ times.splice(i,1); updateStats(); }
-function clearAll(){ times=[]; updateStats(); }
-
-function setBg(c){ document.body.style.background=c; }
-function setText(c){ document.body.style.color=c; }
-
+/* ===== SCRAMBLE ===== */
 function newScramble(){
  const m=["R","R'","L","L'","U","U'","D","D'","F","F'","B","B'"];
  let s=[];
  for(let i=0;i<20;i++) s.push(m[Math.floor(Math.random()*m.length)]);
- scramble.innerText="Scramble: "+s.join(" ");
+ document.getElementById("scramble").innerText="Scramble: "+s.join(" ");
  drawCube();
 }
 
-/* Cube 2D */
+/* ===== CUBE 2D ỔN ĐỊNH ===== */
 function drawCube(){
- const c=cube.getContext("2d");
- c.clearRect(0,0,180,140);
- const col=["white","yellow","red","orange","blue","green"];
- let i=0;
- function face(x,y){
+ const ctx=document.getElementById("cube").getContext("2d");
+ ctx.clearRect(0,0,180,140);
+ const faces={
+  U:"#fff", L:"#f80", F:"#0f0",
+  R:"#f00", B:"#00f", D:"#ff0"
+ };
+ function face(x,y,color){
   for(let r=0;r<3;r++)
-   for(let k=0;k<3;k++){
-    c.fillStyle=col[i++%6];
-    c.fillRect(x+k*18,y+r*18,16,16);
+   for(let c=0;c<3;c++){
+    ctx.fillStyle=color;
+    ctx.fillRect(x+c*18,y+r*18,16,16);
    }
  }
- face(60,0); face(0,60); face(60,60);
- face(120,60); face(60,120);
+ face(60,0,faces.U);
+ face(0,60,faces.L);
+ face(60,60,faces.F);
+ face(120,60,faces.R);
+ face(60,120,faces.D);
 }
 
 newScramble();
