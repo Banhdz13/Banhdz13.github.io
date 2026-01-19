@@ -8,7 +8,7 @@ body {
     margin: 0;
     background: #111;
     color: white;
-    font-family: Arial, sans-serif;
+    font-family: Arial;
     text-align: center;
 }
 header {
@@ -16,28 +16,35 @@ header {
     padding: 15px;
     font-weight: bold;
 }
+#scramble {
+    font-size: 18px;
+    margin: 10px;
+}
 #timer {
     font-size: 90px;
     margin: 20px 0;
 }
 #message {
-    font-size: 22px;
     min-height: 30px;
-}
-#scramble {
-    font-size: 18px;
-    margin: 10px;
+    font-size: 22px;
 }
 canvas {
     background: #222;
-    margin: 10px auto;
     display: block;
+    margin: 10px auto;
 }
 button {
-    padding: 10px 16px;
-    margin: 5px;
-    font-size: 16px;
+    padding: 8px 14px;
+    margin: 4px;
+    font-size: 15px;
 }
+.panel {
+    max-width: 600px;
+    margin: 10px auto;
+    border: 1px solid #333;
+    padding: 10px;
+}
+ul { text-align: left; }
 </style>
 </head>
 
@@ -46,132 +53,139 @@ button {
 <header>BAcubeTimer</header>
 
 <div id="scramble"></div>
+<button onclick="newScramble()">🔄 Reset Scramble</button>
 
 <canvas id="cube" width="180" height="140"></canvas>
 
 <div id="timer">0.00</div>
 <div id="message">Giữ SPACE để chuẩn bị</div>
 
-<button onclick="resetTimer()">Reset</button>
+<button onclick="resetTimer()">Reset Timer</button>
+
+<div class="panel">
+<h3>🎨 Màu sắc</h3>
+Nền <input type="color" onchange="setBg(this.value)">
+Chữ <input type="color" onchange="setText(this.value)">
+</div>
+
+<div class="panel">
+<h3>📊 Thống kê</h3>
+<ul id="history"></ul>
+<button onclick="clearAll()">🗑 Xóa hết</button>
+</div>
 
 <audio id="win" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3"></audio>
 <audio id="lose" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"></audio>
 
 <script>
-let running = false;
-let ready = false;
-let startTime = 0;
-let raf;
-let times = [];
+let running=false, ready=false, startTime=0, raf;
+let times=[];
 
-const timerEl = document.getElementById("timer");
-const msgEl = document.getElementById("message");
-
-document.addEventListener("keydown", e => {
-    if (e.code === "Space" && !running) {
-        ready = true;
-        msgEl.innerText = "Thả SPACE để bắt đầu";
-        e.preventDefault();
-    }
+document.addEventListener("keydown",e=>{
+ if(e.code==="Space" && !running){
+   ready=true;
+   message.innerText="Thả SPACE để bắt đầu";
+   e.preventDefault();
+ }
 });
 
-document.addEventListener("keyup", e => {
-    if (e.code === "Space") {
-        if (!running && ready) {
-            startTimer();
-        } else if (running) {
-            stopTimer();
-        }
-        e.preventDefault();
-    }
+document.addEventListener("keyup",e=>{
+ if(e.code==="Space"){
+   if(!running && ready) start();
+   else if(running) stop();
+   e.preventDefault();
+ }
 });
 
-function startTimer() {
-    ready = false;
-    running = true;
-    startTime = performance.now();
-    msgEl.innerText = "Đang chạy...";
-    loop();
+function start(){
+ ready=false;
+ running=true;
+ startTime=performance.now();
+ message.innerText="Đang chạy...";
+ loop();
 }
 
-function loop() {
-    if (!running) return;
-    let t = (performance.now() - startTime) / 1000;
-    timerEl.innerText = t.toFixed(2);
-    raf = requestAnimationFrame(loop);
+function loop(){
+ if(!running) return;
+ timer.innerText=((performance.now()-startTime)/1000).toFixed(2);
+ raf=requestAnimationFrame(loop);
 }
 
-function stopTimer() {
-    running = false;
-    cancelAnimationFrame(raf);
-    let t = (performance.now() - startTime) / 1000;
-    timerEl.innerText = t.toFixed(2);
-    evaluate(t);
-    newScramble();
+function stop(){
+ running=false;
+ cancelAnimationFrame(raf);
+ let t=((performance.now()-startTime)/1000);
+ timer.innerText=t.toFixed(2);
+ evaluate(t);
+ save(t);
+ newScramble();
 }
 
-function resetTimer() {
-    running = false;
-    ready = false;
-    timerEl.innerText = "0.00";
-    msgEl.innerText = "Giữ SPACE để chuẩn bị";
+function resetTimer(){
+ running=false;
+ ready=false;
+ timer.innerText="0.00";
+ message.innerText="Giữ SPACE để chuẩn bị";
 }
 
-function evaluate(t) {
-    let msg = "";
-    let sound = "win";
-
-    if (t <= 5) msg = "KỈ LỤC THẾ GIỚI À =))";
-    else if (t <= 10) msg = "Trời ơi đỉnh dữ vậy";
-    else if (t <= 15) msg = "Ê quá ghê rồi á";
-    else if (t <= 20) msg = "Ối dồi ôi ghê vậy";
-    else if (t <= 25) msg = "Ghê vậy ba";
-    else if (t <= 35) msg = "Cũng ghê phết nhờ";
-    else if (t <= 40) msg = "Mới bắt đầu học F2L hả";
-    else {
-        msg = "Ê học F2L đi nha";
-        sound = "lose";
-    }
-
-    msgEl.innerText = msg;
-    document.getElementById(sound).play();
+function evaluate(t){
+ let msg="", sound="win";
+ if(t<=5) msg="KỈ LỤC THẾ GIỚI À =))";
+ else if(t<=10) msg="Trời ơi đỉnh dữ vậy";
+ else if(t<=15) msg="Ê quá ghê rồi á";
+ else if(t<=20) msg="Ối dồi ôi ghê vậy";
+ else if(t<=25) msg="Ghê vậy ba";
+ else if(t<=35) msg="Cũng ghê phết nhờ";
+ else if(t<=40) msg="Mới học F2L hả";
+ else { msg="Ê học F2L đi nha"; sound="lose"; }
+ message.innerText=msg;
+ document.getElementById(sound).play();
 }
 
-function newScramble() {
-    const moves = ["R","R'","L","L'","U","U'","D","D'","F","F'","B","B'"];
-    let s = [];
-    for (let i=0;i<20;i++) {
-        s.push(moves[Math.floor(Math.random()*moves.length)]);
-    }
-    document.getElementById("scramble").innerText =
-        "Scramble: " + s.join(" ");
-    drawCube();
+function save(t){
+ times.push(t);
+ updateStats();
 }
 
-/* VẼ CUBE 2D MÔ PHỎNG */
-function drawCube() {
-    const c = document.getElementById("cube");
-    const ctx = c.getContext("2d");
-    ctx.clearRect(0,0,c.width,c.height);
+function updateStats(){
+ history.innerHTML="";
+ times.forEach((t,i)=>{
+   let li=document.createElement("li");
+   li.innerHTML=`${t.toFixed(2)}s 
+   <button onclick="del(${i})">🗑</button>`;
+   history.appendChild(li);
+ });
+}
 
-    const colors = ["white","yellow","red","orange","blue","green"];
-    let i = 0;
+function del(i){ times.splice(i,1); updateStats(); }
+function clearAll(){ times=[]; updateStats(); }
 
-    function face(x,y) {
-        for (let r=0;r<3;r++) {
-            for (let col=0;col<3;col++) {
-                ctx.fillStyle = colors[i%6];
-                ctx.fillRect(x+col*18, y+r*18, 16, 16);
-                i++;
-            }
-        }
-    }
+function setBg(c){ document.body.style.background=c; }
+function setText(c){ document.body.style.color=c; }
 
-    face(60,0);   // U
-    face(0,60);   // L
-    face(60,60);  // F
-    face(120,60); // R
-    face(60,120); // D
+function newScramble(){
+ const m=["R","R'","L","L'","U","U'","D","D'","F","F'","B","B'"];
+ let s=[];
+ for(let i=0;i<20;i++) s.push(m[Math.floor(Math.random()*m.length)]);
+ scramble.innerText="Scramble: "+s.join(" ");
+ drawCube();
+}
+
+/* Cube 2D */
+function drawCube(){
+ const c=cube.getContext("2d");
+ c.clearRect(0,0,180,140);
+ const col=["white","yellow","red","orange","blue","green"];
+ let i=0;
+ function face(x,y){
+  for(let r=0;r<3;r++)
+   for(let k=0;k<3;k++){
+    c.fillStyle=col[i++%6];
+    c.fillRect(x+k*18,y+r*18,16,16);
+   }
+ }
+ face(60,0); face(0,60); face(60,60);
+ face(120,60); face(60,120);
 }
 
 newScramble();
