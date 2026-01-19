@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Rubik Timer</title>
+<style>
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  background:#111;
+  color:#0f0;
+  font-family:Arial, sans-serif;
+}
+#time{
+  font-size:80px;
+  margin-bottom:20px;
+}
+#hint{
+  color:#aaa;
+}
+button{
+  margin-top:15px;
+  padding:8px 20px;
+  font-size:16px;
+  cursor:pointer;
+}
+#last{
+  margin-top:10px;
+  color:#fff;
+}
+</style>
+</head>
+<body>
+
+<div id="time">0.000</div>
+<div id="hint">Nhấn SPACE để bắt đầu / dừng</div>
+<button onclick="reset()">Reset</button>
+<div id="last"></div>
+
+<script>
+let startTime = 0;
+let running = false;
+let timerInterval;
+
+function format(ms){
+  return (ms/1000).toFixed(3);
+}
+
+document.addEventListener("keydown", e=>{
+  if(e.code === "Space"){
+    e.preventDefault();
+    if(!running){
+      start();
+    }else{
+      stop();
+    }
+  }
+});
+
+function start(){
+  running = true;
+  startTime = Date.now();
+  timerInterval = setInterval(()=>{
+    document.getElementById("time").innerText =
+      format(Date.now() - startTime);
+  }, 10);
+}
+
+function stop(){
+  running = false;
+  clearInterval(timerInterval);
+  const finalTime = document.getElementById("time").innerText;
+  document.getElementById("last").innerText =
+    "Lần giải vừa rồi: " + finalTime + " giây";
+}
+
+function reset(){
+  running = false;
+  clearInterval(timerInterval);
+  document.getElementById("time").innerText = "0.000";
+  document.getElementById("last").innerText = "";
+}
+</script>
+
+</body>
+</html>
