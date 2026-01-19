@@ -2,197 +2,197 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>BAcubetimer</title>
+<title>BAcubeTimer</title>
 <style>
 body{
- margin:0;
- font-family:Arial;
- background:#0b0b0b;
- color:white;
- text-align:center;
+    margin:0;
+    background:#111;
+    color:white;
+    font-family:Arial;
+    text-align:center;
 }
-h1{margin:10px}
-
-#timer{
- font-size:80px;
- margin:20px;
+header{
+    font-size:28px;
+    padding:15px;
+    font-weight:bold;
 }
-
 #scramble{
- font-size:20px;
- margin:10px;
- word-break:break-word;
+    font-size:18px;
+    margin:10px;
 }
-
-canvas{
- background:#111;
- margin:auto;
- display:block;
+#timer{
+    font-size:90px;
+    margin:20px 0;
 }
-
+#message{
+    min-height:28px;
+    font-size:22px;
+}
 button{
- padding:10px 15px;
- margin:5px;
- font-size:16px;
- cursor:pointer;
+    padding:8px 14px;
+    margin:4px;
+    font-size:15px;
 }
-
-#msg{
- font-size:18px;
- margin-top:10px;
+.panel{
+    max-width:600px;
+    margin:10px auto;
+    border:1px solid #333;
+    padding:10px;
 }
-
-#stats{
- margin-top:15px;
- font-size:14px;
+ul{text-align:left;}
+canvas{
+    display:block;
+    margin:10px auto;
 }
 </style>
 </head>
 
 <body>
-<h1>BAcubetimer</h1>
 
-<button onclick="enableSound()">🔊 Bật âm thanh</button>
-<button onclick="resetAll()">🗑 Reset tất cả</button>
+<header>BAcubeTimer</header>
 
 <div id="scramble"></div>
+<button onclick="newScramble()">🔄 Reset Scramble</button>
 
-<canvas id="cube" width="320" height="260"></canvas>
+<canvas id="cube" width="180" height="140"></canvas>
 
 <div id="timer">0.00</div>
-<div id="msg">Giữ SPACE để bắt đầu</div>
+<div id="message">Giữ SPACE để chuẩn bị</div>
 
-<div id="stats"></div>
+<button onclick="resetTimer()">Reset Timer</button>
 
-<audio id="win" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3"></audio>
-<audio id="lose" src="https://assets.mixkit.co/sfx/preview/mixkit-losing-drums-2023.mp3"></audio>
+<div class="panel">
+<h3>🎨 Màu sắc</h3>
+Nền <input type="color" onchange="document.body.style.background=this.value">
+Chữ <input type="color" onchange="document.body.style.color=this.value">
+</div>
+
+<div class="panel">
+<h3>📊 Thống kê</h3>
+<ul id="history"></ul>
+<button onclick="clearAll()">🗑 Xóa hết</button>
+</div>
+
+<audio id="good" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3"></audio>
+<audio id="bad" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"></audio>
 
 <script>
-let running=false;
-let startTime=0;
-let interval;
-let soundEnabled=false;
+let running=false, ready=false;
+let startTime=0, raf;
 let times=[];
 
-function enableSound(){
- document.getElementById("win").play().catch(()=>{});
- soundEnabled=true;
- alert("Âm thanh đã bật");
+const timer=document.getElementById("timer");
+const message=document.getElementById("message");
+const history=document.getElementById("history");
+
+/* ===== TIMER ===== */
+document.addEventListener("keydown",e=>{
+ if(e.code==="Space" && !running){
+   ready=true;
+   message.innerText="Thả SPACE để bắt đầu";
+   e.preventDefault();
+ }
+});
+document.addEventListener("keyup",e=>{
+ if(e.code==="Space"){
+   if(!running && ready) start();
+   else if(running) stop();
+   e.preventDefault();
+ }
+});
+
+function start(){
+ ready=false;
+ running=true;
+ startTime=performance.now();
+ message.innerText="Đang chạy...";
+ loop();
+}
+function loop(){
+ if(!running) return;
+ timer.innerText=((performance.now()-startTime)/1000).toFixed(2);
+ raf=requestAnimationFrame(loop);
+}
+function stop(){
+ running=false;
+ cancelAnimationFrame(raf);
+ let t=((performance.now()-startTime)/1000);
+ timer.innerText=t.toFixed(2);
+ evaluate(t);
+ save(t);
+ newScramble();
+}
+function resetTimer(){
+ running=false; ready=false;
+ timer.innerText="0.00";
+ message.innerText="Giữ SPACE để chuẩn bị";
 }
 
-function resetAll(){
- times=[];
- document.getElementById("stats").innerHTML="";
- newScramble();
+/* ===== ĐÁNH GIÁ ===== */
+function evaluate(t){
+ let msg="", sound="good";
+ if(t<=5) msg="KỈ LỤC THẾ GIỚI À =))";
+ else if(t<=10) msg="Trời ơi đỉnh dữ vậy";
+ else if(t<=15) msg="Ê quá ghê rồi á";
+ else if(t<=20) msg="Ối dồi ôi ghê vậy";
+ else if(t<=25) msg="Ghê vậy ba";
+ else if(t<=35) msg="Cũng ghê phết nhờ";
+ else if(t<=40) msg="Mới bắt đầu học F2L hả";
+ else{ msg="Ê học F2L đi nha"; sound="bad"; }
+ message.innerText=msg;
+ document.getElementById(sound).play();
+}
+
+/* ===== THỐNG KÊ ===== */
+function save(t){
+ times.push(t);
+ renderStats();
+}
+function renderStats(){
+ history.innerHTML="";
+ times.forEach((t,i)=>{
+  let li=document.createElement("li");
+  li.innerHTML=`${t.toFixed(2)}s <button onclick="del(${i})">🗑</button>`;
+  history.appendChild(li);
+ });
+}
+function del(i){ times.splice(i,1); renderStats(); }
+function clearAll(){ times=[]; renderStats(); }
+
+/* ===== SCRAMBLE ===== */
+function newScramble(){
+ const m=["R","R'","L","L'","U","U'","D","D'","F","F'","B","B'"];
+ let s=[];
+ for(let i=0;i<20;i++) s.push(m[Math.floor(Math.random()*m.length)]);
+ document.getElementById("scramble").innerText="Scramble: "+s.join(" ");
  drawCube();
 }
 
-function randomScramble(){
- let m=["R","L","U","D","F","B"];
- let s="";
- for(let i=0;i<20;i++){
-  s+=m[Math.floor(Math.random()*6)]+" ";
- }
- return s;
-}
-
-function newScramble(){
- document.getElementById("scramble").innerText="Scramble: "+randomScramble();
-}
-newScramble();
-
-document.addEventListener("keydown",e=>{
- if(e.code==="Space" && !running){
-  running=true;
-  startTime=Date.now();
-  interval=setInterval(update,10);
- }
-});
-
-document.addEventListener("keyup",e=>{
- if(e.code==="Space" && running){
-  running=false;
-  clearInterval(interval);
-  let t=(Date.now()-startTime)/1000;
-  times.push(t);
-  showMsg(t);
-  updateStats();
-  newScramble();
- }
-});
-
-function update(){
- let t=(Date.now()-startTime)/1000;
- document.getElementById("timer").innerText=t.toFixed(2);
-}
-
-function showMsg(t){
- let msg="";
- let sound="win";
- if(t<=5) msg="KỈ LỤC THẾ GIỚI À =))";
- else if(t<=10) msg="TRỜI ƠI ĐỈNH ĐỈNH ĐỈNH";
- else if(t<=15) msg="QUÁ GHÊ RỒI NHA";
- else if(t<=20) msg="ỐI DỒI ÔI GHÊ VẬY";
- else if(t<=25) msg="GHÊ VẬY BA";
- else if(t<=35) msg="CŨNG GHÊ PHẾT NHỜ";
- else if(t<=40){ msg="MỚI HỌC F2L HẢ"; sound="lose";}
- else { msg="Ê HỌC F2L ĐI NHA"; sound="lose"; }
-
- document.getElementById("msg").innerText=msg;
- if(soundEnabled) document.getElementById(sound).play();
-}
-
-function updateStats(){
- let html="Thống kê:<br>";
- times.forEach((t,i)=>{
-  html+=`${i+1}. ${t.toFixed(2)}s ❌<br>`;
- });
- document.getElementById("stats").innerHTML=html;
-}
-
+/* ===== CUBE 2D ỔN ĐỊNH ===== */
 function drawCube(){
- const c=document.getElementById("cube");
- const ctx=c.getContext("2d");
- ctx.clearRect(0,0,c.width,c.height);
-
- const size=40;
- const ox=120, oy=20;
-
- const colors={
-  U:"white", D:"yellow",
-  F:"green", B:"blue",
-  L:"orange", R:"red"
+ const ctx=document.getElementById("cube").getContext("2d");
+ ctx.clearRect(0,0,180,140);
+ const faces={
+  U:"#fff", L:"#f80", F:"#0f0",
+  R:"#f00", B:"#00f", D:"#ff0"
  };
-
  function face(x,y,color){
-  ctx.fillStyle=color;
-  ctx.fillRect(x,y,size,size);
-  ctx.strokeStyle="black";
-  ctx.strokeRect(x,y,size,size);
+  for(let r=0;r<3;r++)
+   for(let c=0;c<3;c++){
+    ctx.fillStyle=color;
+    ctx.fillRect(x+c*18,y+r*18,16,16);
+   }
  }
-
- // U
- face(ox+size,oy,colors.U);
- face(ox+2*size,oy,colors.U);
- face(ox+size,oy+size,colors.U);
- face(ox+2*size,oy+size,colors.U);
-
- // L F R
- face(ox,oy+2*size,colors.L);
- face(ox+size,oy+2*size,colors.F);
- face(ox+2*size,oy+2*size,colors.R);
-
- face(ox,oy+3*size,colors.L);
- face(ox+size,oy+3*size,colors.F);
- face(ox+2*size,oy+3*size,colors.R);
-
- // D (KHÔNG BỊ CỤT)
- face(ox+size,oy+4*size,colors.D);
- face(ox+2*size,oy+4*size,colors.D);
- face(ox+size,oy+5*size,colors.D);
- face(ox+2*size,oy+5*size,colors.D);
+ face(60,0,faces.U);
+ face(0,60,faces.L);
+ face(60,60,faces.F);
+ face(120,60,faces.R);
+ face(60,120,faces.D);
 }
-drawCube();
+
+newScramble();
 </script>
+
 </body>
 </html>
+
